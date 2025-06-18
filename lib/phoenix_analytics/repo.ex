@@ -70,6 +70,7 @@ defmodule PhoenixAnalytics.Repo do
     with {:ok, db} <- open_duckdb(),
          {:ok, connection} <- Duckdbex.connection(db),
          {:ok, _} <- Bridge.attach_postgres(db, connection) do
+      enable_extensions(connection)
       {:ok, connection}
     end
   end
@@ -79,6 +80,11 @@ defmodule PhoenixAnalytics.Repo do
       true -> Duckdbex.open()
       _ -> Duckdbex.open(@db_path)
     end
+  end
+
+  defp enable_extensions(conn) do
+    {:ok, _} = Duckdbex.query(conn, "SET autoinstall_known_extensions=1;")
+    {:ok, _} = Duckdbex.query(conn, "SET autoload_known_extensions=1;")
   end
 
   # --- server callbacks ---
@@ -106,6 +112,7 @@ defmodule PhoenixAnalytics.Repo do
          {:ok, conn} <- Duckdbex.connection(db),
          {:ok, read_conn} <- Duckdbex.connection(db),
          {:ok, _} <- Bridge.attach_postgres(db, conn) do
+      enable_extensions(conn)
       {:ok, %{connection: conn, read_connection: read_conn}}
     else
       {:error, reason} ->
