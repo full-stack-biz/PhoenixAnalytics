@@ -53,8 +53,8 @@ defmodule PhoenixAnalytics.Repo do
     Duckdbex.query(conn, "SET autoinstall_known_extensions=1;")
     Duckdbex.query(conn, "SET autoload_known_extensions=1;")
 
-    Duckdbex.query("INSTALL core_functions;")
-    Duckdbex.query("LOAD core_functions;")
+    Duckdbex.query(conn, "INSTALL core_functions;")
+    Duckdbex.query(conn, "LOAD core_functions;")
 
     unless Duckdbex.extension_is_loaded(db, "core_functions") do
       {:error, "duckdb: failed to load postgres extension"}
