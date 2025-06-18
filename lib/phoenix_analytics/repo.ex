@@ -49,6 +49,20 @@ defmodule PhoenixAnalytics.Repo do
     GenServer.call(__MODULE__, :get_connection)
   end
 
+  defp enable_extensions(conn, db) do
+    Duckdbex.query(conn, "SET autoinstall_known_extensions=1;")
+    Duckdbex.query(conn, "SET autoload_known_extensions=1;")
+
+    Duckdbex.query("INSTALL core_functions;")
+    Duckdbex.query("LOAD core_functions;")
+
+    unless Duckdbex.extension_is_loaded(db, "core_functions") do
+      {:error, "duckdb: failed to load postgres extension"}
+    end
+
+    {:ok, "extensions enabled"}
+  end
+
   @doc """
   Creates and returns a new DuckDB read connection.
 
@@ -70,7 +84,7 @@ defmodule PhoenixAnalytics.Repo do
     with {:ok, db} <- open_duckdb(),
          {:ok, connection} <- Duckdbex.connection(db),
          {:ok, _} <- Bridge.attach_postgres(db, connection),
-         {:ok, _} <- enable_extensions(connection) do
+         {:ok, _} <- enable_extensions(connection, db) do
       {:ok, connection}
     end
   end
@@ -80,12 +94,6 @@ defmodule PhoenixAnalytics.Repo do
       true -> Duckdbex.open()
       _ -> Duckdbex.open(@db_path)
     end
-  end
-
-  defp enable_extensions(conn) do
-    {:ok, _} = Duckdbex.query(conn, "SET autoinstall_known_extensions=1;")
-    {:ok, _} = Duckdbex.query(conn, "SET autoload_known_extensions=1;")
-    {:ok, "extensions enabled"}
   end
 
   # --- server callbacks ---
@@ -113,7 +121,7 @@ defmodule PhoenixAnalytics.Repo do
          {:ok, conn} <- Duckdbex.connection(db),
          {:ok, read_conn} <- Duckdbex.connection(db),
          {:ok, _} <- Bridge.attach_postgres(db, conn),
-         {:ok, _} <- enable_extensions(conn) do
+         {:ok, _} <- enable_extensions(conn, db) do
       {:ok, %{connection: conn, read_connection: read_conn}}
     else
       {:error, reason} ->
