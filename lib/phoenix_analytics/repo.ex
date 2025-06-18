@@ -69,8 +69,8 @@ defmodule PhoenixAnalytics.Repo do
   def get_read_connection do
     with {:ok, db} <- open_duckdb(),
          {:ok, connection} <- Duckdbex.connection(db),
-         {:ok, connection} <- enable_extensions(connection),
-         {:ok, _} <- Bridge.attach_postgres(db, connection) do
+         {:ok, _} <- Bridge.attach_postgres(db, connection),
+         {:ok, _} <- enable_extensions(connection) do
       {:ok, connection}
     end
   end
@@ -85,7 +85,7 @@ defmodule PhoenixAnalytics.Repo do
   defp enable_extensions(conn) do
     {:ok, _} = Duckdbex.query(conn, "SET autoinstall_known_extensions=1;")
     {:ok, _} = Duckdbex.query(conn, "SET autoload_known_extensions=1;")
-    {:ok, conn}
+    {:ok, "extensions enabled"}
   end
 
   # --- server callbacks ---
@@ -111,9 +111,9 @@ defmodule PhoenixAnalytics.Repo do
   def init(_state) do
     with {:ok, db} <- open_duckdb(),
          {:ok, conn} <- Duckdbex.connection(db),
-         {:ok, conn} <- enable_extensions(conn),
          {:ok, read_conn} <- Duckdbex.connection(db),
-         {:ok, _} <- Bridge.attach_postgres(db, conn) do
+         {:ok, _} <- Bridge.attach_postgres(db, conn),
+         {:ok, _} <- enable_extensions(conn) do
       {:ok, %{connection: conn, read_connection: read_conn}}
     else
       {:error, reason} ->
